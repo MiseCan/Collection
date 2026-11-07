@@ -1,0 +1,21 @@
+# PDFBox checks for this optional JPEG 2000 decoder before using it.
+-dontwarn com.gemalto.jp2.JP2Decoder
+
+# PDFBox constructs the decryption handlers through SecurityHandlerFactory.
+-keep,allowobfuscation class com.tom_roush.pdfbox.pdmodel.encryption.StandardSecurityHandler {
+    public <init>();
+}
+-keep,allowobfuscation class com.tom_roush.pdfbox.pdmodel.encryption.PublicKeySecurityHandler {
+    public <init>();
+}
+
+# POI's desktop graphics and diagnostic APIs are outside the Word text extraction path.
+-dontwarn java.awt.Color
+-dontwarn java.awt.Dimension
+-dontwarn java.awt.Rectangle
+-dontwarn java.awt.color.ColorSpace
+-dontwarn java.awt.geom.**
+-dontwarn java.awt.image.**
+
+# Log4j checks for an OSGi runtime before using its OSGi service loader.
+-dontwarn org.osgi.framework.**

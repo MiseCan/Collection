@@ -1,0 +1,9 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Separate upper page: collecting multiple originals into one place. -->
+    <path android:fillColor="#3C7667"
+        android:pathData="M46,30H66C70.4,30 74,33.6 74,38V61C74,63.2 72.2,65 70,65H68V44C68,38.5 63.5,34 58,34H42C42,31.8 43.8,30 46,30Z" />
+    <!-- Rounded lower page and folded collecting corner. Holes remain transparent when themed. -->
+    <path android:fillColor="#005143" android:fillType="evenOdd"
+        android:pathData="M39,38H57C61,38 64,41 64,45V68L54,78H39C35,78 32,75 32,71V45C32,41 35,38 39,38Z M42,49H54C55.1,49 56,49.9 56,51C56,52.1 55.1,53 54,53H42C40.9,53 40,52.1 40,51C40,49.9 40.9,49 42,49Z M42,59H50C51.1,59 52,59.9 52,61C52,62.1 51.1,63 50,63H42C40.9,63 40,62.1 40,61C40,59.9 40.9,59 42,59Z" />
+</vector>

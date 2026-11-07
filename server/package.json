@@ -1,0 +1,10 @@
+{
+  "name": "collfresh-personal-proxy",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file=.env proxy.mjs",
+    "test": "node --test proxy.test.mjs"
+  }
+}
