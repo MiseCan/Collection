@@ -6,6 +6,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -100,22 +102,44 @@ fun AppRoot(vm: AppViewModel, navController: CollectionNavigator = rememberColle
         dismissButton = { TextButton(onClick = { discard = false }) { Text("继续编辑") } })
     state.pendingShare?.let { payload ->
         var separate by remember(payload) { mutableStateOf(false) }
-        AlertDialog(onDismissRequest = vm::dismissShare, title = { Text("收录分享内容") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("收到 ${payload.uris.size} 个文件" + if (payload.text.isNotBlank()) "和分享文字" else "")
-                    if (state.page == Page.EDITOR && state.draftChanged) Text("继续导入将放弃当前未保存的编辑。", color = MaterialTheme.colorScheme.error)
-                    if (payload.uris.size > 1) {
-                        Column(Modifier.selectableGroup()) {
-                            ImportChoice("合并为一个条目", !separate) { separate = false }
-                            ImportChoice("每个文件独立创建条目", separate) { separate = true }
+        var choosingEntry by remember(payload) { mutableStateOf(false) }
+        var entryId by remember(payload) { mutableStateOf<String?>(null) }
+        val canImport = !state.loading && state.loadError == null && !state.busy && !state.generating
+        if (choosingEntry) {
+            AlertDialog(onDismissRequest = { choosingEntry = false }, title = { Text("选择已有条目") },
+                text = {
+                    LazyColumn(Modifier.heightIn(max = 320.dp).selectableGroup()) {
+                        items(state.library.entries, key = { it.id }) { entry ->
+                            ImportChoice(entry.title.ifBlank { "未命名条目" }, entryId == entry.id) { entryId = entry.id }
                         }
-                        MotionReveal(separate) { Text("分享文字会附到每个条目；导入后可编辑并生成 AI 标题。", style = MaterialTheme.typography.bodySmall) }
-                    } else Text("将在编辑页中确认并保存。", style = MaterialTheme.typography.bodySmall)
-                }
-            },
-            confirmButton = { TextButton(onClick = { vm.acceptShare(separate) }, enabled = !state.loading && !state.busy && !state.generating) { Text("开始导入") } },
-            dismissButton = { TextButton(onClick = vm::dismissShare) { Text("取消") } })
+                    }
+                },
+                confirmButton = {
+                    TextButton(enabled = canImport && state.library.entries.any { it.id == entryId },
+                        onClick = { entryId?.let(vm::acceptShareIntoEntry) }) { Text("添加到条目") }
+                },
+                dismissButton = { TextButton(onClick = { choosingEntry = false }) { Text("返回") } })
+        } else {
+            AlertDialog(onDismissRequest = vm::dismissShare, title = { Text("收录分享内容") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("收到 ${payload.uris.size} 个文件" + if (payload.text.isNotBlank()) "和分享文字" else "")
+                        if (state.page == Page.EDITOR && state.draftChanged) Text("继续导入将放弃当前未保存的编辑。", color = MaterialTheme.colorScheme.error)
+                        if (payload.uris.size > 1) {
+                            Column(Modifier.selectableGroup()) {
+                                ImportChoice("合并为一个条目", !separate) { separate = false }
+                                ImportChoice("每个文件独立创建条目", separate) { separate = true }
+                            }
+                            MotionReveal(separate) { Text("分享文字会附到每个条目；导入后可编辑并生成 AI 标题。", style = MaterialTheme.typography.bodySmall) }
+                        } else Text("新建条目后可在编辑页中确认并保存。", style = MaterialTheme.typography.bodySmall)
+                        if (state.library.entries.isNotEmpty()) {
+                            TextButton(enabled = canImport, onClick = { choosingEntry = true }) { Text("添加到已有条目") }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { vm.acceptShare(separate) }, enabled = canImport) { Text("新建条目") } },
+                dismissButton = { TextButton(onClick = vm::dismissShare) { Text("取消") } })
+        }
     }
 
 }

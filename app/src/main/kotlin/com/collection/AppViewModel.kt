@@ -443,6 +443,33 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             newEntry(); changeDraft(draft.copy(body = share.text)); importToDraft(share.uris)
         } else importSeparateShare(share)
     }
+    fun acceptShareIntoEntry(entryId: String) {
+        if (busy || generating) return
+        val share = pendingShare ?: return
+        pendingShare = null
+        importShareIntoEntry(entryId, share)
+    }
+
+    private fun importShareIntoEntry(entryId: String, share: SharePayload): Unit = work({
+        require(store.load().entries.any { it.id == entryId }) { "条目已不存在或已移到回收站" }
+        val additions = mutableListOf<Attachment>()
+        val failures = mutableListOf<Uri>()
+        for (uri in share.uris.distinct()) {
+            try { additions += store.importAttachment(uri) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { failures += uri }
+        }
+        if (additions.isNotEmpty() || share.text.isNotBlank()) {
+            store.appendSharedContent(entryId, share.text, additions)
+            library = store.load()
+            notices.send("已添加到所选条目")
+        }
+        if (failures.isNotEmpty()) {
+            operationError = "${failures.size} 个文件添加失败，可重试失败的文件"
+            retryAction = { importShareIntoEntry(entryId, SharePayload("", failures)) }
+        }
+    })
+
     private fun importSeparateShare(share: SharePayload): Unit = work({
             var successes = 0; val errors = mutableListOf<Pair<Uri, String>>()
             share.uris.distinct().forEach { uri ->

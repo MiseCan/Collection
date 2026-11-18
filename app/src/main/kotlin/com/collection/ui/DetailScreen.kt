@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -14,6 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -140,11 +147,6 @@ fun DetailScreen(entry: Entry, tags: List<Tag>, onBack: () -> Unit,
                         { confirmBatch = true }, { batch = false; selected = emptySet() })
                 }
             }
-            if (entry.body.isBlank() && !batch) item(key = "empty_body") {
-                Box(Modifier.animateItem(fadeInSpec = effects, placementSpec = placement, fadeOutSpec = effects)) {
-                    OriginalTextCard("添加文字") { if (onText != null) onText() else viewingText = true }
-                }
-            }
             if (entry.body.isNotBlank()) item(key = "body") {
                 val selection = SourceSelection(null, entry.bodyTitle)
                 SourceActions(enabled, onAi = { requestSourceAi(selection) }, onRename = { sourceTitle = selection },
@@ -168,6 +170,38 @@ fun DetailScreen(entry: Entry, tags: List<Tag>, onBack: () -> Unit,
                         Box(Modifier.weight(1f)) { OriginalFileCard(attachment, onLongClick = longPress) {
                             if (batch) select(attachment.id) else onPreview(attachment)
                         } }
+                    }
+                }
+            }
+            if (entry.body.isBlank() && !batch) item(key = "body") {
+                val outline = MaterialTheme.colorScheme.outline
+                val radius = 16.dp
+                Surface(
+                    onClick = { if (onText != null) onText() else viewingText = true },
+                    enabled = enabled,
+                    shape = RoundedCornerShape(radius),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    modifier = Modifier.fillMaxWidth()
+                        .animateItem(fadeInSpec = effects, placementSpec = placement, fadeOutSpec = effects)
+                        .drawWithCache {
+                            val width = 1.dp.toPx()
+                            val dash = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 5.dp.toPx()))
+                            onDrawWithContent {
+                                drawContent()
+                                drawRoundRect(
+                                    color = outline,
+                                    topLeft = Offset(width / 2, width / 2),
+                                    size = Size(size.width - width, size.height - width),
+                                    cornerRadius = CornerRadius(radius.toPx() - width / 2),
+                                    style = Stroke(width, pathEffect = dash),
+                                )
+                            }
+                        },
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Text("添加文字", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }

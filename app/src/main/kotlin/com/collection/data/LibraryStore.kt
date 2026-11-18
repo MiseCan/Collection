@@ -73,6 +73,21 @@ class LibraryStore(context: Context, private val syncActor: String = SyncIdentit
         }
     }
 
+    suspend fun appendSharedContent(id: String, text: String, attachments: List<Attachment>) = mutate {
+        val db = helper.writableDatabase
+        db.transaction {
+            val entry = loadLocked().entries.firstOrNull { it.id == id }
+                ?: error("条目已不存在或已移到回收站")
+            attachments.forEach { verifyAttachment(it) }
+            putEntry(db, entry.copy(
+                body = if (text.isBlank()) entry.body else listOf(entry.body, text).filter { it.isNotBlank() }.joinToString("\n\n"),
+                bodyTitle = if (text.isBlank()) entry.bodyTitle else "",
+                attachments = entry.attachments + attachments,
+                updatedAt = maxOf(System.currentTimeMillis(), entry.updatedAt.coerceAtMost(Long.MAX_VALUE - 1) + 1),
+            ))
+        }
+    }
+
     suspend fun deleteEntry(id: String) = deleteEntries(setOf(id))
 
     suspend fun deleteEntries(ids: Set<String>) = mutate {
